@@ -7,44 +7,45 @@ protocol MainScreenTableViewCellDelegate: AnyObject {
     func payPerMonthTapped()
 }
 
-class MainScreenTableViewCell: UITableViewCell {
+final class MainScreenTableViewCell: UITableViewCell {
     
     private var photos = [UIImage]()
     
     //MARK: - Outlets
     
-    @IBOutlet weak var containerView: UIView!
-    @IBOutlet weak var carNameLabel: UILabel!
-    @IBOutlet weak var carPriceInRublesLabel: UILabel!
-    @IBOutlet weak var carPriceInDollarsLabel: UILabel!
-    @IBOutlet weak var carPhotosCollectionView: UICollectionView!
-    @IBOutlet weak var carAboutLabel: UILabel!
-    @IBOutlet weak var payPerMonthLabel: UIButton!
-    
-    
+    @IBOutlet private weak var containerView: UIView!
+    @IBOutlet private weak var carNameLabel: UILabel!
+    @IBOutlet private weak var carPriceInRublesLabel: UILabel!
+    @IBOutlet private weak var carPriceInDollarsLabel: UILabel!
+    @IBOutlet private weak var carPhotosCollectionView: UICollectionView!
+    @IBOutlet private weak var infoAboutCarLabel: UILabel!
+    @IBOutlet private weak var payPerMonthLabel: UIButton!
+    @IBOutlet private weak var hideButton: UIButton!
+    @IBOutlet private weak var firstPositionView: UIImageView!
+    @IBOutlet private weak var secondPositionView: UIImageView!
+    @IBOutlet private weak var vinAndTopStackView: UIStackView!
     
     //MARK: - Actions
     
-    @IBAction func hideButtonTapped(_ sender: Any) {
+    @IBAction private func hideButtonTapped(_ sender: Any) {
         delegate?.hideTapped()
     }
     
-    @IBAction func favoriteButtonTapped(_ sender: Any) {
+    @IBAction private func favoriteButtonTapped(_ sender: Any) {
         delegate?.favoriteTapped()
     }
     
-    @IBAction func leasingButtonTapped(_ sender: Any) {
+    @IBAction private func leasingButtonTapped(_ sender: Any) {
         delegate?.leasingTapped()
     }
     
-    @IBAction func payPerMonthButtonTapped(_ sender: Any) {
+    @IBAction private func payPerMonthButtonTapped(_ sender: Any) {
         delegate?.payPerMonthTapped()
     }
     
-    
     weak var delegate: MainScreenTableViewCellDelegate?
     
-    
+    //MARK: - Lifecycle
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -52,30 +53,57 @@ class MainScreenTableViewCell: UITableViewCell {
         carPhotosCollectionView.delegate = self
         carPhotosCollectionView.register(UINib(nibName: "IconCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "IconCollectionViewCell")
         containerView.layer.cornerRadius = 10
-        //carPhotosCollectionView.layer.cornerRadius = 10
+        firstPositionView.layer.cornerRadius = 4
+        secondPositionView.layer.cornerRadius = 4
+        carPhotosCollectionView.layer.cornerRadius = 10
+        carPhotosCollectionView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner]
     }
     
-    func infoAboutCar(car: CarInfo, indexPath: IndexPath, photos: [UIImage]) {
-        self.carNameLabel.text = car.carName
-        self.carPriceInDollarsLabel.text = "≈ " + String(car.carPriceInDollars) + "$"
-        self.carPriceInRublesLabel.text = String(car.carPriceInRubles) + "р."
-        self.carAboutLabel.text = descriptionString(car: car)
-        self.payPerMonthLabel.setTitle("от " + monthlyPayment(car: car, years: 5) + "$/мес", for: .normal)
+        func setInfoAboutCar(car: CarInfo, indexPath: IndexPath, photos: [UIImage]) {
+        carNameLabel.text = car.carName
+        carPriceInDollarsLabel.text = " ≈ " + String(car.carPriceInDollars) + "$"
+        carPriceInRublesLabel.text = String(car.carPriceInRubles) + "р."
+        infoAboutCarLabel.text = descriptionString(car: car)
+        payPerMonthLabel.setTitle("от " + monthlyPayment(car: car, years: 7) + "$/мес", for: .normal)
         self.photos = photos
+        
+        if  car.top == true && car.vin == true {
+            firstPositionView.image = UIImage(named: "top")
+            secondPositionView.image = UIImage(named: "vin")
+            hideButton.isHidden = true
+        } else if car.top == true && car.vin == false {
+            firstPositionView.image = UIImage(named: "top")
+            hideButton.isHidden = true
+        } else if car.top == false && car.vin == true {
+            firstPositionView.image = UIImage(named: "vin")
+        } else if car.top == false && car.vin == false {
+            vinAndTopStackView.isHidden = true
+        }
+        
         carPhotosCollectionView.reloadData()
     }
+    
+    override func prepareForReuse() {
+            super.prepareForReuse()
+        self.firstPositionView.image = nil
+        self.secondPositionView.image = nil
+        self.hideButton.isHidden = false
+        self.vinAndTopStackView.isHidden = false
+        }
     
     private func monthlyPayment(car: CarInfo, years: Int) -> String {
         let fullPrice = car.carPriceInDollars
         let paymentForMonth = fullPrice / years / 12
         return String(paymentForMonth)
     }
+}
     
     private func descriptionString(car: CarInfo) -> String {
-        var resultStr = ""
+        var carDescription = ""
         var engineType = ""
         var bodyType = ""
         var transmissionType = ""
+        
         switch car.engineType {
         case .gasoline:
             engineType = "бензин"
@@ -107,18 +135,13 @@ class MainScreenTableViewCell: UITableViewCell {
             transmissionType = "робот"
         }
         if car.engineType != .electric {
-            resultStr = "\(car.carYear) г., \(transmissionType) ,\(car.capacity) л, \(engineType), \(bodyType), \(car.milleage) км, \(car.carColor), \(car.fuelConsumption) л/100км"
+            carDescription = "\(car.carYear) г., \(transmissionType) ,\(car.capacity) л, \(engineType), \(bodyType), \(car.milleage) км, \(car.carColor), \(car.fuelConsumption) л/100км"
         } else {
-            resultStr = "\(car.carYear) г., \(transmissionType) , \(engineType), \(bodyType), \(car.milleage) км, \(car.carColor) "
+            carDescription = "\(car.carYear) г., \(transmissionType) , \(engineType), \(bodyType), \(car.milleage) км, \(car.carColor) "
         }
-        return resultStr
+        return carDescription
     }
 
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
-
-    }
-}
 
 
 extension MainScreenTableViewCell: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
@@ -133,8 +156,4 @@ extension MainScreenTableViewCell: UICollectionViewDelegate, UICollectionViewDat
         }
         return UICollectionViewCell()
     }
-    
-//    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-//        return CGSize(width: <#T##Double#>, height: <#T##Double#>)
-//    }
 }

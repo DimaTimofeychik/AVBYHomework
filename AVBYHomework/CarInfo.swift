@@ -9,6 +9,8 @@ struct CarInfo {
     var carPriceInDollars: Int {
         Int(Double(carPriceInRubles) / 3.23)
     }
+    let vin: Bool
+    let top: Bool
     let images: [UIImage]
     let bodyType: BodyType
     let engineType: EngineType
